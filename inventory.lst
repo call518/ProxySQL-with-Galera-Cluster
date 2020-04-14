@@ -11,8 +11,8 @@ proxysql-01 ip=10.10.10.91
 # reader_hostgroup = 3
 # offline_hostgroup = 1
 # Make sure read_only is enabled when you want to set any host in reader hostgroup and that you set writer_is_also_reader=0
-galera-01 ip=10.10.10.101 hostgroup_id=2 weight=100 max_connections=1000 max_latency_ms=10 read_only=OFF wsrep_desync=OFF wsrep_reject_queries=NONE wsrep_sst_donor_rejects_queries=OFF ## writer_hostgroup, Seed-Of-Cluster(Initiator)
-galera-02 ip=10.10.10.102 hostgroup_id=2 weight=10 max_connections=1000 max_latency_ms=10 read_only=OFF wsrep_desync=OFF wsrep_reject_queries=NONE wsrep_sst_donor_rejects_queries=OFF ## backup_writer_hostgroup
-galera-03 ip=10.10.10.103 hostgroup_id=3 weight=100 max_connections=1000 max_latency_ms=10 read_only=ON wsrep_desync=OFF wsrep_reject_queries=NONE wsrep_sst_donor_rejects_queries=OFF ## reader_hostgroup
-galera-04 ip=10.10.10.104 hostgroup_id=3 weight=100 max_connections=1000 max_latency_ms=10 read_only=ON wsrep_desync=OFF wsrep_reject_queries=NONE wsrep_sst_donor_rejects_queries=OFF ## reader_hostgroup
-galera-05 ip=10.10.10.105 hostgroup_id=3 weight=100 max_connections=1000 max_latency_ms=10 read_only=ON wsrep_desync=OFF wsrep_reject_queries=NONE wsrep_sst_donor_rejects_queries=OFF ## reader_hostgroup
+galera-01 ip=10.10.10.101 hostgroup_id=2 weight=100 max_connections=20000 max_latency_ms=10 read_only=OFF wsrep_desync=OFF wsrep_reject_queries=NONE wsrep_sst_donor_rejects_queries=OFF ## writer_hostgroup, Seed-Of-Cluster(Initiator)
+galera-02 ip=10.10.10.102 hostgroup_id=2 weight=10 max_connections=20000 max_latency_ms=10 read_only=OFF wsrep_desync=OFF wsrep_reject_queries=NONE wsrep_sst_donor_rejects_queries=OFF ## backup_writer_hostgroup
+galera-03 ip=10.10.10.103 hostgroup_id=3 weight=100 max_connections=20000 max_latency_ms=10 read_only=ON wsrep_desync=OFF wsrep_reject_queries=NONE wsrep_sst_donor_rejects_queries=OFF ## reader_hostgroup
+galera-04 ip=10.10.10.104 hostgroup_id=3 weight=100 max_connections=20000 max_latency_ms=10 read_only=ON wsrep_desync=OFF wsrep_reject_queries=NONE wsrep_sst_donor_rejects_queries=OFF ## reader_hostgroup
+galera-05 ip=10.10.10.105 hostgroup_id=3 weight=100 max_connections=20000 max_latency_ms=10 read_only=ON wsrep_desync=OFF wsrep_reject_queries=NONE wsrep_sst_donor_rejects_queries=OFF ## reader_hostgroup

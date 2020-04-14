@@ -87,7 +87,7 @@ proxysql:
       active: 1
       max_writers: 1
       writer_is_also_reader: 0
-      max_transactions_behind: 100
+      max_transactions_behind: 50000
       comment: "Galera-Cluster Groups (Total: {{ groups['galera-cluster'] | length }} Hosts)"
   client_users:
     - name: "proxysql_test_user"
@@ -95,7 +95,7 @@ proxysql:
       databases:
         - "proxy_test_db_01"
         - "proxy_test_db_02"
-      max_connections: "100"
+      max_connections: "10000"
       transaction_persistent: "yes"
       fast_forward: "no"
       use_ssl: "no"

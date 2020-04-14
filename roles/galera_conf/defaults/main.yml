@@ -14,4 +14,4 @@ wsrep_node_address: "{{ bind_address }}"
 wsrep_sst_receive_address: "{{ bind_address }}"
 mysql_log_slow_path: "/var/log/mysql/mysql-slow.log"
 mysql_long_query_time: 3
-wsrep_causal_reads: "ON"
+wsrep_causal_reads: "OFF"
