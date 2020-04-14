@@ -1,0 +1,7 @@
+[client]
+#mysql -uadmin -p -h127.0.0.1 -P6032 --prompt="ProxySQL> "
+host="{{ proxysql.admin_variables.admin_credentials.host }}"
+port="{{ proxysql.admin_variables.mysql_ifaces.port }}"
+user="{{ proxysql.admin_variables.admin_credentials.user }}"
+password="{{ proxysql.admin_variables.admin_credentials.pass }}"
+prompt="ProxySQL-Admin> "

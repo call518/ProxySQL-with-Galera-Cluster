@@ -1,0 +1,175 @@
+---
+# tasks file for proxysql
+
+- name: "Create Yum Repo Config for ProxySQL"
+  template:
+    src: "proxysql.repo.j2"
+    dest: "/etc/yum.repos.d/proxysql.repo"
+    owner: "root"
+    group: "root"
+    mode: "0644"
+    backup: no
+
+- name: "Create Yum Repo Config for MariaDB-Client"
+  template:
+    src: "mariadb.repo.j2"
+    dest: "/etc/yum.repos.d/mariadb.repo"
+    owner: "root"
+    group: "root"
+    mode: "0644"
+    backup: no
+
+- name: "Install ProxySQL Packages"
+  yum:
+    name: "{{ item }}"
+  with_items:
+    - "proxysql-{{ proxysql.rpm_version.ProxySQL }}"
+    - "MySQL-python-{{ proxysql.rpm_version.MySQL_python }}"
+    - "MariaDB-client"
+
+- name: "Config ProxySQL"
+  template:
+    src: "proxysql.cnf.j2"
+    dest: "/etc/proxysql.cnf"
+    owner: "root"
+    group: "proxysql"
+    mode: "0640"
+    backup: yes
+  notify: "Restart ProxySQL Service"
+
+- name: "Apply Handler Immediatly"
+  meta: flush_handlers
+
+- name: "Ensure Running of ProxySQL Service"
+  systemd:
+    name: proxysql
+    state: started
+    enabled: yes
+    daemon_reload: yes
+
+- name: "Creare {{ proxysql.admin_client_my_cnf_path }} for ProxySQL-Admin"
+  template:
+    src: "admin-client.my.cnf.j2"
+    dest: "{{ proxysql.admin_client_my_cnf_path }}"
+    owner: "root"
+    group: "root"
+    mode: 0600
+
+- name: "Wait for the ProxySQL admin interface"
+  wait_for:
+    connect_timeout: 2
+    port: "{{ (proxysql.admin_variables.mysql_ifaces.port | default(proxysql.admin_variables.mysql_ifaces.port)) }}"
+    timeout: 60
+
+- name: "Custom Config ProxySQL - Global Variables"
+  proxysql_global_variables:
+    config_file: "{{ proxysql.admin_client_my_cnf_path }}"
+    #login_host: "{{ proxysql.admin_variables.admin_credentials.host | default('127.0.0.1') }}"
+    #login_user: "{{ proxysql.admin_variables.admin_credentials.user | default(omit) }}"
+    #login_password: "{{ proxysql.admin_variables.admin_credentials.pass | default('omit') }}"
+    #login_port: "{{ proxysql.admin_variables.mysql_ifaces.port | default('6032') }}"
+    variable: "{{ item.name }}"
+    value: "{{ item.value }}"
+    load_to_runtime: no
+    save_to_disk: no
+  with_items:
+    #- { name: "mysql-max_connections", value: 4096 }
+    #- { name: "mysql-monitor_username", value: "{{ proxysql.mysql_variables.monitor_username }}" }
+    #- { name: "mysql-monitor_password", value: "{{ proxysql.mysql_variables.monitor_password }}" }
+    - { name: "admin-web_enabled", value: "{{ proxysql.admin_variables.admin_web.enabled }}" }
+    - { name: "admin-web_port", value: "{{ proxysql.admin_variables.admin_web.port }}" }
+    - { name: "admin-stats_credentials", value: "{{ proxysql.admin_variables.admin_web.stats_credentials.user }}:{{ proxysql.admin_variables.admin_web.stats_credentials.pass }}" }
+
+- name: "Create MySQL Client Users :: on ProxySQL Host"
+  proxysql_mysql_users:
+    config_file: "{{ proxysql.admin_client_my_cnf_path }}"
+    #login_host: "{{ proxysql.admin_variables.admin_credentials.host | default('127.0.0.1') }}"
+    #login_user: "{{ proxysql.admin_variables.admin_credentials.user | default(omit) }}"
+    #login_password: "{{ proxysql.admin_variables.admin_credentials.pass | default('omit') }}"
+    #login_port: "{{ proxysql.admin_variables.mysql_ifaces.port | default('6032') }}"
+    username: "{{ item.name }}"
+    password: "{{ item.pass }}"
+    max_connections: "{{ item.max_connections }}"
+    transaction_persistent: "{{ item.transaction_persistent }}"
+    fast_forward: "{{ item.fast_forward }}"
+    use_ssl: "{{ item.use_ssl }}"
+    frontend: "{{ item.frontend }}"
+    backend: "{{ item.backend }}"
+    default_hostgroup: "{{ item.default_hostgroup }}"
+    active: "{{ item.active }}"
+    state: present
+    load_to_runtime: no
+    save_to_disk: no
+  with_items: "{{ proxysql.client_users }}"
+
+##########################################################################
+
+- name: "Config ProxySQL - Clear 'mysql_galera_hostgroups'"
+  shell: "mysql --defaults-file={{ proxysql.admin_client_my_cnf_path }} -e 'delete from mysql_galera_hostgroups'"
+
+- name: "Config ProxySQL - Define 'mysql_galera_hostgroups'"
+  proxysql_galera_hostgroups:
+    config_file: "{{ proxysql.admin_client_my_cnf_path }}"
+    #login_host: "{{ proxysql.admin_variables.admin_credentials.host | default('127.0.0.1') }}"
+    #login_user: "{{ proxysql.admin_variables.admin_credentials.user | default(omit) }}"
+    #login_password: "{{ proxysql.admin_variables.admin_credentials.pass | default('omit') }}"
+    #login_port: "{{ proxysql.admin_variables.mysql_ifaces.port | default('6032') }}"
+    writer_hostgroup: "{{ proxysql.config.hostgroups.writer_hostgroup }}"
+    reader_hostgroup: "{{ proxysql.config.hostgroups.reader_hostgroup }}"
+    backup_writer_hostgroup: "{{ proxysql.config.hostgroups.backup_writer_hostgroup }}"
+    offline_hostgroup: "{{ proxysql.config.hostgroups.offline_hostgroup }}"
+    active: "{{ proxysql.config.hostgroups.active }}"
+    max_writers: "{{ proxysql.config.hostgroups.max_writers }}"
+    writer_is_also_reader: "{{ proxysql.config.hostgroups.writer_is_also_reader }}"
+    max_transactions_behind: "{{ proxysql.config.hostgroups.max_transactions_behind }}"
+    comment: "{{ proxysql.config.hostgroups.comment }}"
+    state: present
+    load_to_runtime: no
+    save_to_disk: no
+
+- name: "Config ProxySQL - Clear 'mysql_servers'"
+  shell: "mysql --defaults-file={{ proxysql.admin_client_my_cnf_path }} -e 'delete from mysql_servers'"
+
+- name: "Config ProxySQL - Define 'mysql_servers'"
+  proxysql_backend_servers:
+    config_file: "{{ proxysql.admin_client_my_cnf_path }}"
+    #login_host: "{{ proxysql.admin_variables.admin_credentials.host | default('127.0.0.1') }}"
+    #login_user: "{{ proxysql.admin_variables.admin_credentials.user | default(omit) }}"
+    #login_password: "{{ proxysql.admin_variables.admin_credentials.pass | default('omit') }}"
+    #login_port: "{{ proxysql.admin_variables.mysql_ifaces.port | default('6032') }}"
+    comment: "{{ hostvars[item]['comment'] | default('') }}"
+    compression: "{{ hostvars[item]['compression'] | default('0') }}"
+    hostgroup_id: "{{ hostvars[item]['hostgroup_id'] | default(proxysql.default_hostgroup_id) }}"
+    hostname: "{{ hostvars[item]['inventory_hostname'] }}"
+    max_connections: "{{ hostvars[item]['max_connections'] | default('2000') }}"
+    max_latency_ms: "{{ hostvars[item]['max_latency_ms'] | default('10') }}"
+    max_replication_lag: "{{ hostvars[item]['max_replication_lag'] | default('0') }}"
+    port: "{{ hostvars[item]['port'] | default('3306') }}"
+    status: "{{ hostvars[item]['status'] | default('ONLINE') }}"
+    use_ssl: "{{ hostvars[item]['use_ssl'] | default('no') }}"
+    weight: "{{ hostvars[item]['weight'] | default('100') }}"
+    state: present
+    load_to_runtime: no
+    save_to_disk: no
+  with_items: "{{ groups['galera-cluster'] }}"
+
+##########################################################################
+
+- name: "Reset(Remove) ALL Rules"
+  proxysql_query_rules:
+    config_file: "{{ proxysql.admin_client_my_cnf_path }}"
+    state: absent
+    force_delete: true
+
+- name: "Create Test Query Rule"
+  proxysql_query_rules:
+    config_file: "{{ proxysql.admin_client_my_cnf_path }}"
+    match_pattern: "{{ item.match_pattern }}"
+    destination_hostgroup: "{{ item.destination_hostgroup }}"
+    active: "{{ item.active }}"
+    retries: "{{ item.retries }}"
+    state: present
+    load_to_runtime: no
+    save_to_disk: no
+  with_items: "{{ proxysql.query_rules }}"
+

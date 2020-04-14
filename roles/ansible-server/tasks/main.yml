@@ -1,0 +1,21 @@
+---
+# tasks file for ansible-server
+
+- name: "Config ansible.cfg"
+  copy:
+    src: "ansible.cfg"
+    dest: "/etc/ansible/ansible.cfg"
+    owner: "root"
+    group: "root"
+    mode: "0644"
+    backup: yes
+
+- name: "Generate /etc/hosts"
+  template:
+    src: "etc_hosts.j2"
+    dest: "/etc/hosts"
+    owner: "root"
+    group: "root"
+    mode: "0644"
+    backup: yes
+  

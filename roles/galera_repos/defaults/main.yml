@@ -1,0 +1,2 @@
+---
+mariadb_release: "{{ mariadb_version }}"

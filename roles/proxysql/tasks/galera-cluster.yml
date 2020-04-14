@@ -1,0 +1,37 @@
+---
+- name: "Create Monitor-User for Galera Servers"
+  mysql_user:
+    config_file: "/root/.my.cnf"
+    name: "{{ proxysql.mysql_variables.monitor_username }}"
+    password: "{{ proxysql.mysql_variables.monitor_password }}"
+    host: "{{ item }}"
+    priv: "*.*:USAGE"
+    state: present
+  with_items:
+    - "localhost"
+    - "%"
+  run_once: yes
+
+- name: "Create Client-Users for MySQL :: on Galera-Cluster"
+  mysql_user:
+    config_file: "/root/.my.cnf"
+    name: "{{ item[0].name }}"
+    password: "{{ item[0].pass }}"
+    host: "{{ item[1] }}"
+    priv: "{{ item[0].databases | map('regex_replace', '$', '.*:ALL') | join('/') }}"
+    state: present
+  with_nested:
+    - "{{ proxysql.client_users }}"
+    - [ "%", "localhost" ]
+  run_once: yes
+
+- name: "Create MySQL Database for Client :: on Galera-Cluster"
+  mysql_db:
+    name: "{{ item.1 }}"
+    state: present
+  run_once: yes
+  #with_items:
+  #  - "{{ proxysql.client_users }}"
+  with_subelements:
+    - "{{ proxysql.client_users }}"
+    - "databases"

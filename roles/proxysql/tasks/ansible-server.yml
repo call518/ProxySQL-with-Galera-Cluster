@@ -1,0 +1,10 @@
+---
+- name: "Add Ansible Module - proxysql_galera_hostgroups.py"
+  template:
+    src: "proxysql_galera_hostgroups.py.j2"
+    dest: "/usr/lib/python2.7/site-packages/ansible/modules/database/proxysql/proxysql_galera_hostgroups.py"
+    owner: "root"
+    group: "root"
+    mode: "0644"
+    backup: no
+

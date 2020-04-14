@@ -1,0 +1,40 @@
+#jinja2: trim_blocks:False
+global
+  chroot {{ haproxy.global.chroot }}
+  daemon
+  user {{ haproxy.global.user }}
+  group {{ haproxy.global.group }}
+  maxconn {{ haproxy.global.maxconn }}
+  log {{ haproxy.global.log }}
+  pidfile {{ haproxy.global.pidfile }}
+  spread-checks {{ haproxy.global.spread_checks }}
+  {% for stats in haproxy.global.stats %}stats {{ stats }}
+  {% endfor %}
+
+defaults
+  log {{ haproxy.default.log }}
+  mode {{ haproxy.default.mode }}
+  retries {{ haproxy.default.retries }}
+  maxconn {{ haproxy.default.maxconn }}
+  {% for option in haproxy.default.options %}option {{ option }}
+  {% endfor %}{% for timeout in haproxy.default.timeouts %}timeout {{ timeout }}
+  {% endfor %}
+
+listen haproxy_stats
+  bind {{ haproxy.listen.haproxy_stats.bind.address }}:{{ haproxy.listen.haproxy_stats.bind.port }}
+  mode {{ haproxy.listen.haproxy_stats.mode }}
+  {% for timeout in haproxy.listen.haproxy_stats.timeouts %}timeout {{ timeout }}
+  {% endfor %}{% for stats in haproxy.listen.haproxy_stats.stats %}stats {{ stats }}
+  {% endfor %}
+
+##########################################################################
+
+listen galera_{{ global.openstack.service_port.galera }}
+  bind {{ haproxy.listen.galera.bind.address }}:{{ haproxy.listen.galera.bind.port }}
+  mode {{ haproxy.listen.galera.mode }}
+  balance {{ haproxy.listen.galera.balance }}
+  {% for option in haproxy.listen.galera.options %}option {{ option }}
+  {% endfor %}{% for timeout in haproxy.listen.galera.timeouts %}timeout {{ timeout }}
+  {% endfor %}default-server port {{ haproxy.listen.galera.default_server.port }} inter {{ haproxy.listen.galera.default_server.inter }} downinter {{ haproxy.listen.galera.default_server.downinter }} rise {{ haproxy.listen.galera.default_server.rise }} fall {{ haproxy.listen.galera.default_server.fall }} slowstart {{ haproxy.listen.galera.default_server.slowstart }} maxconn {{ haproxy.listen.galera.default_server.maxconn }} maxqueue {{ haproxy.listen.galera.default_server.maxqueue }} weight {{ haproxy.listen.galera.default_server.weight }}
+  {% for host in groups['galera-cluster'] %}server {{ host }} {{ hostvars[host]['ansible_' + global.galera.listen_interface]['ipv4']['address'] }}:{{ haproxy.listen.galera.bind.port }} check{% if not loop.first %} backup{% endif %}
+  {% endfor %}

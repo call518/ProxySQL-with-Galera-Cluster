@@ -1,0 +1,29 @@
+---
+- hosts: localhost
+  gather_facts: false
+  vars_files:
+    - "vars-global.yml"
+  tags: "ansible-server"
+  roles:
+    - { role: proxysql, tags: ansible-server }
+
+- hosts: galera-cluster
+  gather_facts: false
+  vars_files:
+    - "vars-global.yml"
+  tags: "galera-cluster"
+  roles:
+    - { role: proxysql, tags: galera-cluster }
+
+- hosts: proxysql-cluster
+  gather_facts: false
+  vars_files:
+    - "vars-global.yml"
+    - "vars-systemd-proxysql.yml"
+  tags: "proxysql-cluster"
+  roles:
+    - { role: proxysql, tags: [ "proxysql-cluster", "save-proxysql" ] }
+    - role: "systemd-service"
+      become: yes
+      systemd_service:
+        proxysql: "{{ systemd_config }}"

@@ -1,0 +1,40 @@
+---
+# tasks file for proxysql
+
+- name: "Load, From MEMORY to RUNTIME"
+  proxysql_manage_config:
+    config_file: "{{ proxysql.admin_client_my_cnf_path }}"
+    #login_host: "{{ proxysql.admin_variables.admin_credentials.host | default('127.0.0.1') }}"
+    #login_user: "{{ proxysql.admin_variables.admin_credentials.user | default(omit) }}"
+    #login_password: "{{ proxysql.admin_variables.admin_credentials.pass | default('omit') }}"
+    #login_port: "{{ proxysql.admin_variables.mysql_ifaces.port | default('6032') }}"
+    action: "LOAD"
+    config_settings: "{{ item }}"
+    direction: "TO"
+    config_layer: "RUNTIME"
+  with_items:
+    - "ADMIN VARIABLES"
+    - "MYSQL VARIABLES"
+    - "MYSQL SERVERS"
+    - "MYSQL USERS"
+    - "MYSQL QUERY RULES"
+    - "SCHEDULER"
+
+- name: "Save, from MEMORY to DISK"
+  proxysql_manage_config:
+    config_file: "{{ proxysql.admin_client_my_cnf_path }}"
+    #login_host: "{{ proxysql.admin_variables.admin_credentials.host | default('127.0.0.1') }}"
+    #login_user: "{{ proxysql.admin_variables.admin_credentials.user | default(omit) }}"
+    #login_password: "{{ proxysql.admin_variables.admin_credentials.pass | default('omit') }}"
+    #login_port: "{{ proxysql.admin_variables.mysql_ifaces.port | default('6032') }}"
+    action: "SAVE"
+    config_settings: "{{ item }}"
+    direction: "FROM"
+    config_layer: "MEMORY"
+  with_items:
+    - "ADMIN VARIABLES"
+    - "MYSQL VARIABLES"
+    - "MYSQL SERVERS"
+    - "MYSQL USERS"
+    - "MYSQL QUERY RULES"
+    - "SCHEDULER"

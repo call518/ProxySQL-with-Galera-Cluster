@@ -1,0 +1,11 @@
+---
+- hosts:
+    galera-cluster
+    proxysql-cluster
+  gather_facts: yes
+  #become: true
+  vars_files:
+    - "vars-global.yml"
+    - "vars-etc-hosts.yml"
+  roles:
+    - etc-hosts

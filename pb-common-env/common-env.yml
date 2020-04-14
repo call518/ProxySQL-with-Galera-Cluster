@@ -1,0 +1,10 @@
+---
+- hosts:
+    - galera-cluster
+  vars:
+  vars_files:
+    - "vars-dns-resolv.yml"
+  roles:
+    - security
+    - dns-resolv
+    - common-env

@@ -1,0 +1,15 @@
+---
+# tasks file for proxysql
+
+- import_tasks: ansible-server.yml
+  tags: ansible-server
+
+- import_tasks: galera-cluster.yml
+  tags: galera-cluster
+
+- import_tasks: proxysql-cluster.yml
+  tags: proxysql-cluster
+
+- import_tasks: save-proxysql.yml
+  tags: save-proxysql
+

@@ -1,0 +1,144 @@
+---
+#random_host: "{{ groups['openstack-controller'] | random }}"
+
+####################################################
+
+#ssh_user: "root"
+#ssh_user_base_dir: "/"
+#ssh_public_key: "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCm/+4h5Nh7sH94S9XHqQ5XKH0MWelYwBMRyyqs39zoErglA+3h74g4QfqDdlyfgPYf/XR+4BwK1IDpeeYTjlAQEOr++RRw+q5L1xiL/+iG9IKvFcBe0vuKEE9RNYuhE5ksY0leInurMbQNirlVuMeQPJZI9oNjmrmoBwUkGhpQ87Mrrr0vcrxZF46FGSQqlpVdxHtcFmIpIN411+zXmjXaYbVNtw+jFDEmH9hMdL9Sp4M8R90CNfobvQjitOS69CdnvOyqm0c4CPyq595wvNmKfol5DZU7Xq4kyOQwzsfg2UzS3YudDd05AeiJeEv1Om22587qRQjYjjlGncVLYVdx root@Ansible-Server"
+
+ssh_keys:
+  - { user: "root", base_dir: "/", public_key: "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCm/+4h5Nh7sH94S9XHqQ5XKH0MWelYwBMRyyqs39zoErglA+3h74g4QfqDdlyfgPYf/XR+4BwK1IDpeeYTjlAQEOr++RRw+q5L1xiL/+iG9IKvFcBe0vuKEE9RNYuhE5ksY0leInurMbQNirlVuMeQPJZI9oNjmrmoBwUkGhpQ87Mrrr0vcrxZF46FGSQqlpVdxHtcFmIpIN411+zXmjXaYbVNtw+jFDEmH9hMdL9Sp4M8R90CNfobvQjitOS69CdnvOyqm0c4CPyq595wvNmKfol5DZU7Xq4kyOQwzsfg2UzS3YudDd05AeiJeEv1Om22587qRQjYjjlGncVLYVdx root@Ansible-Server" }
+
+mariadb_version: "10.1"
+#galera_package_name: "galera{% if (mariadb_version | version_compare('10.4','>=')) %}-4{% endif %}"
+
+proxysql:
+  rpm_version:
+    ProxySQL: "2.0.8-1"
+    MySQL_python: "1.2.5-1.el7"
+  admin_client_my_cnf_path: "/root/.proxysql.cnf"
+  config_file: "/etc/proxysql.cnf"
+  default_hostgroup_id: 2 # writer=2, backup_writer=4, reader=3, offline=1
+  datadir: "/var/lib/proxysql"
+  errorlog: "/var/lib/proxysql/proxysql.log"
+  idle_threads: true
+  admin_variables:
+    admin_credentials:
+      host: "127.0.0.1"
+      user: "admin"
+      pass: "1234"
+    admin_web:
+      enabled: true
+      port: 6080
+      stats_credentials:
+        user: "stats"
+        pass: "1234"
+    mysql_ifaces:
+      ip: "127.0.0.1"
+      port: "6032"
+      socket:
+        enabled: false
+        path: "/tmp/proxysql_admin.sock"
+    refresh_interval: 2000
+    debug: true
+  mysql_variables:
+    ## TODO
+    threads: 8
+    max_connections: 2048
+    default_query_delay: 0
+    default_query_timeout: 36000000
+    have_compress: true
+    poll_timeout: 2000
+    #interfaces: "0.0.0.0:6033;/tmp/proxysql.sock"
+    interfaces:
+      address: "0.0.0.0"
+      port: "6033"
+      socket:
+        enabled: false
+        path: "/tmp/proxysql.sock"
+    default_schema: "information_schema"
+    stacksize: 1048576
+    server_version: "5.5.30"
+    #server_version: "2.5.17" #Fack
+    connect_timeout_server: 3000
+    # make sure to configure monitor username and password
+    # https://github.com/sysown/proxysql/wiki/Global-variables#mysql-monitor_username-mysql-monitor_password
+    monitor_username: "monitor4proxysql"
+    monitor_password: "1234"
+    monitor_history: 600000
+    monitor_connect_interval: 60000
+    monitor_ping_interval: 10000
+    monitor_read_only_interval: 1500
+    monitor_read_only_timeout: 500
+    ping_interval_server_msec: 120000
+    ping_timeout_server: 500
+    commands_stats: true
+    sessions_sort: true
+    connect_retries_on_failure: 10
+  remove_mysql_backend_servers:
+    #- { hostname: "test-01", weight: "100" }
+  config:
+    hostgroups:
+      writer_hostgroup: 2
+      reader_hostgroup: 3
+      backup_writer_hostgroup: 4
+      offline_hostgroup: 1
+      active: 1
+      max_writers: 1
+      writer_is_also_reader: 0
+      max_transactions_behind: 100
+      comment: "Galera-Cluster Groups (Total: {{ groups['galera-cluster'] | length }} Hosts)"
+  client_users:
+    - name: "proxysql_test_user"
+      pass: "1234"
+      databases:
+        - "proxy_test_db_01"
+        - "proxy_test_db_02"
+      max_connections: "100"
+      transaction_persistent: "yes"
+      fast_forward: "no"
+      use_ssl: "no"
+      frontend: "yes"
+      backend: "yes"
+      default_hostgroup: "2"
+      active: "yes"
+  query_rules:
+    - match_pattern: "^SELECT.*"
+      destination_hostgroup: 3
+      active: yes
+      retries: 3
+    - match_pattern: "^SELECT.* FOR UPDATE"
+      destination_hostgroup: 2
+      active: yes
+      retries: 3
+    
+galera:
+  root_user: "root"
+  root_pass: 1234
+  force_bootstrap_galera: false
+  service_port: 3306
+  bootstrap_group_index: 0
+  bootstrap_mark_file: "/root/galera-first-bootstrap-finished.mark"
+  listen_interface: eth0
+  sysctl:
+    fs_nr_open: 2000000
+    fs_file_max: 2000000
+    vm_swappiness: 0
+  ulimit:
+    nofile: 2000000
+    nproc: 4194303
+  systemd:
+    limitnofile: 200000
+  general_log:
+    enabled: 1
+    path: "/var/log/mysql/mysql-general.log"
+
+haproxy:
+  fqdn: "galera-haproxy-vip"
+  vip:  "10.10.10.251"
+  stats:
+    interface: eth0
+  galera_xinet_check_port: 9200
+  sysctl:
+    net_ipv4_ip_nonlocal_bind: 1

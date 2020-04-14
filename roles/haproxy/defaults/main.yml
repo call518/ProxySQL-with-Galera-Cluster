@@ -1,0 +1,94 @@
+---
+# defaults file for haproxy
+
+#random_host: "{{ groups['haproxy'] | random }}"
+
+xinetd:
+  monitor_galera_service_name: monitor_galera
+  monitor_galera_service_port: "{{ haproxy.galera_xinet_check_port }}"
+  check_script:
+    file_name: clustercheck
+    file_path: "/usr/bin"
+    db_user: clustercheckuser
+    db_pass: 1234
+
+haproxy_stats:
+  bind_address: "{{ hostvars[inventory_hostname]['ansible_%s' | format(haproxy.stats.interface)].ipv4.address }}"
+  auth:
+    user: admin
+    pass: 1234
+
+haproxy:
+  global:
+    chroot: "/var/lib/haproxy"
+    user: haproxy
+    group: haproxy
+    maxconn: 8192
+    log: /dev/log local0
+    pidfile: /var/run/haproxy.pid
+    spread_checks: 3
+    stats:
+      - "socket 127.0.0.1:14567"
+      - "socket /var/run/haproxy.sock mode 600 level admin"
+
+  default:
+    log: global
+    mode: tcp
+    retries: 3
+    options:
+      - forwardfor
+      - dontlognull
+      - redispatch
+      - forceclose
+      - tcp-smart-accept
+      - tcp-smart-connect
+    timeouts:
+      - "check 3500ms"
+      - "queue 3500ms"
+      - "connect 3500ms"
+      - "http-request 3500ms"
+      - "client 10800s"
+      - "server 10800s"
+    maxconn: 8192
+
+  listen:
+    haproxy_stats:
+      bind:
+        address: "{{ haproxy_stats.bind_address }}"
+        port: 9000
+      timeouts:
+        - "connect 10s"
+        - "client 1m"
+        - "server 1m"
+      mode: http
+      stats:
+        - "enable"
+        - "refresh 60s"
+        - "hide-version"
+        - "admin if TRUE"
+        - "realm Haproxy\ Statistics"
+        - "uri /haproxy_stats level admin"
+        - "auth {{ haproxy_stats.auth.user }}:{{ haproxy_stats.auth.pass }}"
+
+    galera:
+      bind:
+        address: "{{ haproxy.fqdn }}"
+        port: "{{ openstack.service_port.galera }}"
+      mode: tcp
+      balance: leastconn
+      options:
+        - httpchk
+        #- allbackups
+      timeouts:
+        - "client  10800s"
+        - "server  10800s"
+      default_server:
+        port: "{{ haproxy.galera_xinet_check_port }}"
+        inter: 2s
+        downinter: 5s
+        rise: 3
+        fall: 2
+        slowstart: 60s
+        maxconn: 64
+        maxqueue: 128
+        weight: 100

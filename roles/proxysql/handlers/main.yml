@@ -1,0 +1,8 @@
+---
+# handlers file for proxysql
+
+- name: "Restart ProxySQL Service"
+  systemd:
+    name: proxysql
+    state: restarted
+

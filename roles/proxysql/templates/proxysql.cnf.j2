@@ -1,0 +1,209 @@
+#file proxysql.cfg
+
+########################################################################################
+# This config file is parsed using libconfig , and its grammar is described in:        
+# http://www.hyperrealm.com/libconfig/libconfig_manual.html#Configuration-File-Grammar 
+# Grammar is also copied at the end of this file                                       
+########################################################################################
+
+########################################################################################
+# IMPORTANT INFORMATION REGARDING THIS CONFIGURATION FILE:                             
+########################################################################################
+# On startup, ProxySQL reads its config file (if present) to determine its datadir. 
+# What happens next depends on if the database file (disk) is present in the defined
+# datadir (i.e. "/var/lib/proxysql/proxysql.db").
+#
+# If the database file is found, ProxySQL initializes its in-memory configuration from 
+# the persisted on-disk database. So, disk configuration gets loaded into memory and 
+# then propagated towards the runtime configuration. 
+#
+# If the database file is not found and a config file exists, the config file is parsed 
+# and its content is loaded into the in-memory database, to then be both saved on-disk 
+# database and loaded at runtime.
+#
+# IMPORTANT: If a database file is found, the config file is NOT parsed. In this case
+#            ProxySQL initializes its in-memory configuration from the persisted on-disk
+#            database ONLY. In other words, the configuration found in the proxysql.cnf
+#            file is only used to initial the on-disk database read on the first startup.
+#
+# In order to FORCE a re-initialise of the on-disk database from the configuration file 
+# the ProxySQL service should be started with "service proxysql initial".
+#
+########################################################################################
+
+datadir="{{ proxysql.datadir }}"
+errorlog="{{ proxysql.errorlog }}"
+
+admin_variables=
+{
+	admin_credentials="{{ proxysql.admin_variables.admin_credentials.user }}:{{ proxysql.admin_variables.admin_credentials.pass }}"
+#	mysql_ifaces="127.0.0.1:6032;/tmp/proxysql_admin.sock"
+	mysql_ifaces="{{ proxysql.admin_variables.mysql_ifaces.ip }}:{{ proxysql.admin_variables.mysql_ifaces.port }};{% if proxysql.admin_variables.mysql_ifaces.socket.enabled == true %}{{ proxysql.admin_variables.mysql_ifaces.socket.path }}{% endif %}"
+#	refresh_interval={{ proxysql.admin_variables.refresh_interval }}
+#	debug={{ proxysql.admin_variables.debug }}
+}
+
+mysql_variables=
+{
+	threads={{ proxysql.mysql_variables.threads }}
+	max_connections={{ proxysql.mysql_variables.max_connections }}
+	default_query_delay={{ proxysql.mysql_variables.default_query_delay }}
+	default_query_timeout={{ proxysql.mysql_variables.default_query_timeout }}
+	have_compress={{ proxysql.mysql_variables.have_compress }}
+	poll_timeout={{ proxysql.mysql_variables.poll_timeout }}
+#	interfaces="0.0.0.0:6033;/tmp/proxysql.sock"
+	interfaces="{{ proxysql.mysql_variables.interfaces.address }}:{{ proxysql.mysql_variables.interfaces.port }};{% if proxysql.mysql_variables.interfaces.socket.enabled == true %}{{ proxysql.mysql_variables.interfaces.socket.path }}{% endif %}"
+	default_schema="{{ proxysql.mysql_variables.default_schema }}"
+	stacksize={{ proxysql.mysql_variables.stacksize }}
+	server_version="{{ proxysql.mysql_variables.server_version }}"
+	connect_timeout_server={{ proxysql.mysql_variables.connect_timeout_server }}
+        # make sure to configure monitor username and password
+        # https://github.com/sysown/proxysql/wiki/Global-variables#mysql-monitor_username-mysql-monitor_password
+	monitor_username="{{ proxysql.mysql_variables.monitor_username }}"
+	monitor_password="{{ proxysql.mysql_variables.monitor_password }}"
+	monitor_history={{ proxysql.mysql_variables.monitor_history }}
+	monitor_connect_interval={{ proxysql.mysql_variables.monitor_connect_interval }}
+	monitor_ping_interval={{ proxysql.mysql_variables.monitor_ping_interval }}
+	monitor_read_only_interval={{ proxysql.mysql_variables.monitor_read_only_interval }}
+	monitor_read_only_timeout={{ proxysql.mysql_variables.monitor_read_only_timeout }}
+	ping_interval_server_msec={{ proxysql.mysql_variables.ping_interval_server_msec }}
+	ping_timeout_server={{ proxysql.mysql_variables.ping_timeout_server }}
+	commands_stats={{ proxysql.mysql_variables.commands_stats }}
+	sessions_sort={{ proxysql.mysql_variables.sessions_sort }}
+	connect_retries_on_failure={{ proxysql.mysql_variables.connect_retries_on_failure }}
+}
+
+
+# defines all the MySQL servers
+mysql_servers =
+(
+#	{
+#		address = "127.0.0.1" # no default, required . If port is 0 , address is interpred as a Unix Socket Domain
+#		port = 3306           # no default, required . If port is 0 , address is interpred as a Unix Socket Domain
+#		hostgroup = 0	        # no default, required
+#		status = "ONLINE"     # default: ONLINE
+#		weight = 1            # default: 1
+#		compression = 0       # default: 0
+#   max_replication_lag = 10  # default 0 . If greater than 0 and replication lag passes such threshold, the server is shunned
+#	},
+#	{
+#		address = "/var/lib/mysql/mysql.sock"
+#		port = 0
+#		hostgroup = 0
+#	},
+#	{
+#		address="127.0.0.1"
+#		port=21891
+#		hostgroup=0
+#		max_connections=200
+#	},
+#	{ address="127.0.0.2" , port=3306 , hostgroup=0, max_connections=5 },
+#	{ address="127.0.0.1" , port=21892 , hostgroup=1 },
+#	{ address="127.0.0.1" , port=21893 , hostgroup=1 }
+#	{ address="127.0.0.2" , port=3306 , hostgroup=1 },
+#	{ address="127.0.0.3" , port=3306 , hostgroup=1 },
+#	{ address="127.0.0.4" , port=3306 , hostgroup=1 },
+#	{ address="/var/lib/mysql/mysql.sock" , port=0 , hostgroup=1 }
+)
+
+
+# defines all the MySQL users
+mysql_users:
+(
+#	{
+#		username = "username" # no default , required
+#		password = "password" # default: ''
+#		default_hostgroup = 0 # default: 0
+#		active = 1            # default: 1
+#	},
+#	{
+#		username = "root"
+#		password = ""
+#		default_hostgroup = 0
+#		max_connections=1000
+#		default_schema="test"
+#		active = 1
+#	},
+#	{ username = "user1" , password = "password" , default_hostgroup = 0 , active = 0 }
+)
+
+
+
+#defines MySQL Query Rules
+mysql_query_rules:
+(
+#	{
+#		rule_id=1
+#		active=1
+#		match_pattern="^SELECT .* FOR UPDATE$"
+#		destination_hostgroup=0
+#		apply=1
+#	},
+#	{
+#		rule_id=2
+#		active=1
+#		match_pattern="^SELECT"
+#		destination_hostgroup=1
+#		apply=1
+#	}
+)
+
+scheduler=
+(
+#  {
+#    id=1
+#    active=0
+#    interval_ms=10000
+#    filename="/var/lib/proxysql/proxysql_galera_checker.sh"
+#    arg1="0"
+#    arg2="0"
+#    arg3="0"
+#    arg4="1"
+#    arg5="/var/lib/proxysql/proxysql_galera_checker.log"
+#  }
+)
+
+
+mysql_replication_hostgroups=
+(
+#        {
+#                writer_hostgroup=30
+#                reader_hostgroup=40
+#                comment="test repl 1"
+#       },
+#       {
+#                writer_hostgroup=50
+#                reader_hostgroup=60
+#                comment="test repl 2"
+#        }
+)
+
+
+
+
+# http://www.hyperrealm.com/libconfig/libconfig_manual.html#Configuration-File-Grammar
+#
+# Below is the BNF grammar for configuration files. Comments and include directives are not part of the grammar, so they are not included here. 
+#
+# configuration = setting-list | empty
+#
+# setting-list = setting | setting-list setting
+#     
+# setting = name (":" | "=") value (";" | "," | empty)
+#     
+# value = scalar-value | array | list | group
+#     
+# value-list = value | value-list "," value
+#     
+# scalar-value = boolean | integer | integer64 | hex | hex64 | float
+#                | string
+#     
+# scalar-value-list = scalar-value | scalar-value-list "," scalar-value
+#     
+# array = "[" (scalar-value-list | empty) "]"
+#     
+# list = "(" (value-list | empty) ")"
+#     
+# group = "{" (setting-list | empty) "}"
+#     
+# empty =

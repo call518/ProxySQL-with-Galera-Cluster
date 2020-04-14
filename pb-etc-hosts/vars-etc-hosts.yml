@@ -1,0 +1,40 @@
+---
+hosts_add_default_ipv4: true
+hosts_add_basic_ipv6: false
+hosts_add_ansible_managed_hosts: false
+hosts_network_interface: eth0
+hosts_file_backup: yes
+#hosts_file_snippets:
+#  - snippets/hosts_blacklist
+#  - snippets/hosts_adblock
+hosts_entries:
+  ## galera-01
+  - name: proxysql-01
+    ip: 10.10.10.91
+    #aliases:
+    #  - proxysql-01
+  ## galera-01
+  - name: galera-01
+    ip: 10.10.10.101
+    #aliases:
+    #  - galera-01
+  ## galera-02
+  - name: galera-02
+    ip: 10.10.10.102
+    #aliases:
+    #  - galera-02
+  ## galera-03
+  - name: galera-03
+    ip: 10.10.10.103
+    #aliases:
+    #  - galera-03
+  ## galera-04
+  - name: galera-04
+    ip: 10.10.10.104
+    #aliases:
+    #  - galera-04
+  ## galera-05
+  - name: galera-05
+    ip: 10.10.10.105
+    #aliases:
+    #  - galera-05

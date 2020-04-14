@@ -1,0 +1,33 @@
+---
+# tasks file for deploy_ssh_keys
+
+- name: "make direcotry"
+  file:
+    path: "{{ item.base_dir }}/{{ item.user }}/.ssh"
+    state: directory
+  with_items:
+    - "{{ ssh_keys }}"
+
+- name: "create empty file"
+  file:
+    path: "{{ item.base_dir }}/{{ item.user }}/.ssh/authorized_keys"
+    state: touch
+  with_items:
+    - "{{ ssh_keys }}"
+
+- name: "put pubkey"
+  lineinfile:
+    path: "{{ item.base_dir }}/{{ item.user }}/.ssh/authorized_keys"
+    line: "{{ item.public_key }}"
+  with_items:
+    - "{{ ssh_keys }}"
+
+- name: "change ownership/permission - all to 0644"
+  file:
+    path: "{{ item.base_dir }}/{{ item.user }}/.ssh/authorized_keys"
+    owner: "{{ item.user }}"
+    group: "{{ item.user }}"
+    mode: "0644"
+  with_items:
+    - "{{ ssh_keys }}"
+
